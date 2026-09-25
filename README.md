@@ -125,6 +125,11 @@ Commands can use `server` or `servers` interchangeably.
   - `-p, --port <port>` - SSH port (default: 22)
   - `-u, --user <user>` - SSH user (default: root)
   - `--validate` - Validate server immediately after adding
+  - `--server-role <deployment|build|both>` - Server role (API default: `both`). `deployment` requires another usable build server in the team
+- `coolify server update <uuid>` - Update a server (only the given flags are changed)
+  - `--server-role <deployment|build|both>` - Change the server role
+  - `--is-build-server` - Deprecated: maps to `--server-role build` (`true`) or `--server-role both` (`false`); cannot be combined with `--server-role`
+  - Run `coolify server update --help` for the remaining flags
 - `coolify server remove <uuid>` - Remove a server
 - `coolify server validate <uuid>` - Validate a server connection
 - `coolify server domains <uuid>` - Get server domains by UUID

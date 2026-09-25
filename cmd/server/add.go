@@ -16,8 +16,17 @@ func NewAddCommand() *cobra.Command {
 		Use:   "add <server_name> <ip_address> <private_key_uuid>",
 		Args:  cli.ExactArgs(3, "<server_name> <ip_address> <private_key_uuid>"),
 		Short: "Add a server",
+		Long: `Add a server to Coolify.
+
+Example:
+  coolify server add build-1 10.0.0.10 <private_key_uuid> --server-role build`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			serverRole, _, err := resolveServerRole(cmd)
+			if err != nil {
+				return err
+			}
 
 			// Get API client
 			client, err := cli.GetAPIClient(cmd)
@@ -40,6 +49,7 @@ func NewAddCommand() *cobra.Command {
 				Port:            port,
 				User:            user,
 				PrivateKeyUUID:  privateKeyUUID,
+				ServerRole:      serverRole,
 				InstantValidate: validate,
 			}
 
@@ -63,6 +73,7 @@ func NewAddCommand() *cobra.Command {
 	cmd.Flags().IntP("port", "p", 22, "Port")
 	cmd.Flags().StringP("user", "u", "root", "User")
 	cmd.Flags().Bool("validate", false, "Validate the server")
+	addServerRoleFlag(cmd)
 
 	return cmd
 }

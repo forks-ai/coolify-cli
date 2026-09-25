@@ -3524,6 +3524,10 @@ Parameters:
     description: Port
     required: false
     default: 22
+  - name: --server-role
+    type: string
+    description: Server role (deployment|build|both): 'deployment' requires another usable build server
+    required: false
   - name: --user (-u)
     type: string
     description: User
@@ -3911,7 +3915,7 @@ Parameters:
     required: false
   - name: --is-build-server
     type: boolean
-    description: Mark as build server
+    description: Deprecated: use --server-role build (true) or --server-role both (false)
     required: false
     default: false
   - name: --is-terminal-enabled
@@ -3935,6 +3939,10 @@ Parameters:
   - name: --proxy-type
     type: string
     description: Proxy type (e.g. TRAEFIK, CADDY, NGINX)
+    required: false
+  - name: --server-role
+    type: string
+    description: Server role (deployment|build|both): 'deployment' requires another usable build server
     required: false
   - name: --user
     type: string

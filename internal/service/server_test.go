@@ -215,3 +215,92 @@ func TestServerService_ValidateAndInstall(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Validation and installation started.", result.Message)
 }
+
+func decodeRawBody(t *testing.T, r *http.Request) map[string]any {
+	t.Helper()
+	var body map[string]any
+	require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+	return body
+}
+
+func TestServerService_Create_SendsServerRole(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := decodeRawBody(t, r)
+		assert.Equal(t, "build", body["server_role"])
+		assert.NotContains(t, body, "is_build_server")
+
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(models.Response{UUID: "new-uuid"})
+	}))
+	defer server.Close()
+
+	svc := NewServerService(api.NewClient(server.URL, "test-token"))
+	result, err := svc.Create(context.Background(), models.ServerCreateRequest{
+		Name:           "build-1",
+		IP:             "10.0.0.10",
+		Port:           22,
+		User:           "root",
+		PrivateKeyUUID: "key-uuid",
+		ServerRole:     models.ServerRoleBuild,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "new-uuid", result.UUID)
+}
+
+func TestServerService_Create_OmitsServerRoleWhenUnset(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := decodeRawBody(t, r)
+		assert.NotContains(t, body, "server_role")
+		assert.NotContains(t, body, "is_build_server")
+
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(models.Response{UUID: "new-uuid"})
+	}))
+	defer server.Close()
+
+	svc := NewServerService(api.NewClient(server.URL, "test-token"))
+	_, err := svc.Create(context.Background(), models.ServerCreateRequest{
+		Name:           "server-1",
+		IP:             "10.0.0.11",
+		Port:           22,
+		User:           "root",
+		PrivateKeyUUID: "key-uuid",
+	})
+
+	require.NoError(t, err)
+}
+
+func TestServerService_Update_SendsServerRole(t *testing.T) {
+	for _, role := range models.ServerRoles {
+		t.Run(role, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, http.MethodPatch, r.Method)
+				body := decodeRawBody(t, r)
+				assert.Equal(t, map[string]any{"server_role": role}, body)
+
+				w.WriteHeader(http.StatusCreated)
+				_ = json.NewEncoder(w).Encode(models.Response{UUID: "test-uuid"})
+			}))
+			defer server.Close()
+
+			svc := NewServerService(api.NewClient(server.URL, "test-token"))
+			_, err := svc.Update(context.Background(), "test-uuid", models.ServerUpdateRequest{ServerRole: &role})
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestServerService_Get_DecodesServerRole(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"uuid":"test-uuid","name":"build-1","settings":{"is_reachable":true,"is_usable":true,"server_role":"build"}}`))
+	}))
+	defer server.Close()
+
+	svc := NewServerService(api.NewClient(server.URL, "test-token"))
+	result, err := svc.Get(context.Background(), "test-uuid")
+
+	require.NoError(t, err)
+	assert.Equal(t, "build", result.Settings.ServerRole)
+}

@@ -13,8 +13,9 @@ type Server struct {
 
 // Settings for server
 type Settings struct {
-	IsReachable bool `json:"is_reachable"`
-	IsUsable    bool `json:"is_usable"`
+	IsReachable bool   `json:"is_reachable"`
+	IsUsable    bool   `json:"is_usable"`
+	ServerRole  string `json:"server_role,omitempty"`
 }
 
 // ServerCreateRequest for creating servers
@@ -24,6 +25,7 @@ type ServerCreateRequest struct {
 	Port            int    `json:"port"`
 	User            string `json:"user"`
 	PrivateKeyUUID  string `json:"private_key_uuid"`
+	ServerRole      string `json:"server_role,omitempty"`
 	InstantValidate bool   `json:"instant_validate"`
 }
 
@@ -35,7 +37,7 @@ type ServerUpdateRequest struct {
 	Port                                 *int    `json:"port,omitempty"`
 	User                                 *string `json:"user,omitempty"`
 	PrivateKeyUUID                       *string `json:"private_key_uuid,omitempty"`
-	IsBuildServer                        *bool   `json:"is_build_server,omitempty"`
+	ServerRole                           *string `json:"server_role,omitempty"`
 	InstantValidate                      *bool   `json:"instant_validate,omitempty"`
 	ProxyType                            *string `json:"proxy_type,omitempty"`
 	ConcurrentBuilds                     *int    `json:"concurrent_builds,omitempty"`
@@ -51,6 +53,16 @@ type ServerUpdateRequest struct {
 type ServerValidationRequest struct {
 	Install bool `json:"install"`
 }
+
+// Server roles accepted by the API's server_role field.
+const (
+	ServerRoleDeployment = "deployment"
+	ServerRoleBuild      = "build"
+	ServerRoleBoth       = "both"
+)
+
+// ServerRoles lists the valid server_role values.
+var ServerRoles = []string{ServerRoleDeployment, ServerRoleBuild, ServerRoleBoth}
 
 // Domain represents a domain configuration
 type Domain struct {

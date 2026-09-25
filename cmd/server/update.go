@@ -19,11 +19,17 @@ func NewUpdateCommand() *cobra.Command {
 		Long: `Update server configuration by UUID. Only specified fields are updated.
 
 Example:
-  coolify server update <uuid> --name "prod-1" --ip 10.0.0.5 --port 22`,
+  coolify server update <uuid> --name "prod-1" --ip 10.0.0.5 --port 22
+  coolify server update <uuid> --server-role build`,
 		Args: cli.ExactArgs(1, "<uuid>"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			uuid := args[0]
+
+			serverRole, hasServerRole, err := resolveServerRole(cmd)
+			if err != nil {
+				return err
+			}
 
 			client, err := cli.GetAPIClient(cmd)
 			if err != nil {
@@ -68,9 +74,8 @@ Example:
 				req.InstantValidate = &v
 				hasUpdates = true
 			}
-			if cmd.Flags().Changed("is-build-server") {
-				v, _ := cmd.Flags().GetBool("is-build-server")
-				req.IsBuildServer = &v
+			if hasServerRole {
+				req.ServerRole = &serverRole
 				hasUpdates = true
 			}
 			if cmd.Flags().Changed("proxy-type") {
@@ -143,7 +148,8 @@ Example:
 	cmd.Flags().String("user", "", "SSH user")
 	cmd.Flags().String("private-key-uuid", "", "Private key UUID")
 	cmd.Flags().Bool("instant-validate", false, "Validate server after update")
-	cmd.Flags().Bool("is-build-server", false, "Mark as build server")
+	addServerRoleFlag(cmd)
+	addDeprecatedIsBuildServerFlag(cmd)
 	cmd.Flags().String("proxy-type", "", "Proxy type (e.g. TRAEFIK, CADDY, NGINX)")
 	cmd.Flags().Int("connection-timeout", 0, "SSH connection timeout in seconds")
 	cmd.Flags().Bool("is-terminal-enabled", false, "Enable terminal access")
